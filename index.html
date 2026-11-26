@@ -198,13 +198,6 @@
       });
     }
 
-    async function fetchAsBlobURL(url, mimeType, label) {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`${label} ഡൗൺലോഡ് പരാജയപ്പെട്ടു (HTTP ${res.status})`);
-      const buf = await res.arrayBuffer();
-      return URL.createObjectURL(new Blob([buf], { type: mimeType }));
-    }
-
     async function loadFFmpeg() {
       if (ffmpeg) return ffmpeg;
       ffmpeg = new FFmpeg();
@@ -217,17 +210,14 @@
       const ffmpegBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd';
       const coreBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
 
-      log('1/3: Worker സ്ക്രിപ്റ്റ് ഡൗൺലോഡ് ചെയ്യുന്നു...');
-      const classWorkerURL = await fetchAsBlobURL(`${ffmpegBase}/814.ffmpeg.js`, 'text/javascript', '814.ffmpeg.js');
-
-      log('1/3: FFmpeg Core ഡൗൺലോഡ് ചെയ്യുന്നു...');
-      const coreURL = await fetchAsBlobURL(`${coreBase}/ffmpeg-core.js`, 'text/javascript', 'ffmpeg-core.js');
-
-      log('1/3: FFmpeg WASM എഞ്ചിൻ ഡൗൺലോഡ് ചെയ്യുന്നു (~31 MB)...');
-      const wasmURL = await fetchAsBlobURL(`${coreBase}/ffmpeg-core.wasm`, 'application/wasm', 'ffmpeg-core.wasm');
-
-      log('1/3: FFmpeg എഞ്ചിൻ സജ്ജമാക്കുന്നു...');
-      await ffmpeg.load({ classWorkerURL, coreURL, wasmURL });
+      log('1/3: FFmpeg എഞ്ചിൻ ലോഡ് ചെയ്യുന്നു (~31 MB, ആദ്യ തവണ മാത്രം)...');
+      // Only classWorkerURL uses toBlobURL; coreURL & wasmURL load directly over HTTPS inside the worker
+      const classWorkerURL = await toBlobURL(`${ffmpegBase}/814.ffmpeg.js`, 'text/javascript');
+      await ffmpeg.load({
+        classWorkerURL,
+        coreURL: `${coreBase}/ffmpeg-core.js`,
+        wasmURL: `${coreBase}/ffmpeg-core.wasm`
+      });
       return ffmpeg;
     }
 
