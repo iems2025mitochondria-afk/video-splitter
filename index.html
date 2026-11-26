@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ലോസ്‌ലെസ്സ് വീഡിയോ സ്പ്ലിറ്റർ (Lossless Video Splitter)</title>
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
-  <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
   <style>
     :root {
       --bg: #0f172a;
@@ -198,9 +198,15 @@
       });
     }
 
+    async function fetchAsBlobURL(url, mimeType, label) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${label} ഡൗൺലോഡ് പരാജയപ്പെട്ടു (HTTP ${res.status})`);
+      const buf = await res.arrayBuffer();
+      return URL.createObjectURL(new Blob([buf], { type: mimeType }));
+    }
+
     async function loadFFmpeg() {
       if (ffmpeg) return ffmpeg;
-      log('1/3: FFmpeg എഞ്ചിൻ ഡൗൺലോഡ് ചെയ്യുന്നു (~30 MB)...');
       ffmpeg = new FFmpeg();
       ffmpeg.on('log', ({ message }) => {
         if (message.includes('time=') || message.includes('Opening')) {
@@ -208,13 +214,20 @@
         }
       });
 
-      const coreBase = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      const ffmpegBase = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd';
-      await ffmpeg.load({
-        classWorkerURL: await toBlobURL(`${ffmpegBase}/814.ffmpeg.js`, 'text/javascript'),
-        coreURL: await toBlobURL(`${coreBase}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${coreBase}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
+      const ffmpegBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd';
+      const coreBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+
+      log('1/3: Worker സ്ക്രിപ്റ്റ് ഡൗൺലോഡ് ചെയ്യുന്നു...');
+      const classWorkerURL = await fetchAsBlobURL(`${ffmpegBase}/814.ffmpeg.js`, 'text/javascript', '814.ffmpeg.js');
+
+      log('1/3: FFmpeg Core ഡൗൺലോഡ് ചെയ്യുന്നു...');
+      const coreURL = await fetchAsBlobURL(`${coreBase}/ffmpeg-core.js`, 'text/javascript', 'ffmpeg-core.js');
+
+      log('1/3: FFmpeg WASM എഞ്ചിൻ ഡൗൺലോഡ് ചെയ്യുന്നു (~31 MB)...');
+      const wasmURL = await fetchAsBlobURL(`${coreBase}/ffmpeg-core.wasm`, 'application/wasm', 'ffmpeg-core.wasm');
+
+      log('1/3: FFmpeg എഞ്ചിൻ സജ്ജമാക്കുന്നു...');
+      await ffmpeg.load({ classWorkerURL, coreURL, wasmURL });
       return ffmpeg;
     }
 
