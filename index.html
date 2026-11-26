@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ലോസ്‌ലെസ്സ് വീഡിയോ സ്പ്ലിറ്റർ (Lossless Video Splitter)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --border: #334155;
+      --success: #22c55e;
+    }
+    * { box-sizing: border-box; font-family: "Noto Sans Malayalam", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 680px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem;
+    }
+    h1 { margin: 0 0 0.5rem; font-size: 1.5rem; line-height: 1.4; }
+    p.sub { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.95rem; line-height: 1.6; }
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 2.2rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 1.25rem;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .controls {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .field { flex: 1; min-width: 180px; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.35rem; }
+    input[type="number"] {
+      width: 100%;
+      padding: 0.65rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+    }
+    button {
+      padding: 0.72rem 1.4rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: var(--accent-hover); color: #fff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-all {
+      background: var(--success);
+      color: #0f172a;
+      width: 100%;
+      margin-bottom: 0.85rem;
+      display: none;
+    }
+    .btn-all:hover:not(:disabled) { background: #16a34a; color: #fff; }
+    .status {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      white-space: pre-wrap;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+    .outputs { display: flex; flex-direction: column; gap: 0.6rem; }
+    .part-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+    }
+    .part-item a {
+      color: var(--success);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+    .part-item a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ലോസ്‌ലെസ്സ് വീഡിയോ സ്പ്ലിറ്റർ</h1>
+    <p class="sub">
+      ക്വാളിറ്റി ഒട്ടും കുറയാതെ (<code>-c copy</code>) 2GB+ വീഡിയോകളെ 480 MB-യിൽ താഴെയുള്ള ചെറിയ ഭാഗങ്ങളായി മുറിക്കുക. സെർവറിലേക്ക് അപ്‌ലോഡ് ചെയ്യാതെ നിങ്ങളുടെ ബ്രൗസറിൽ (Mac &amp; Windows) തന്നെ വേഗത്തിൽ പ്രവർത്തിക്കുന്നു.
+    </p>
+
+    <div class="drop-zone" id="dropZone">
+      <strong id="fileLabel">വീഡിയോ ഫയൽ തിരഞ്ഞെടുക്കാൻ ഇവിടെ ക്ലിക്ക് ചെയ്യുക അല്ലെങ്കിൽ ഡ്രാഗ് ചെയ്ത് ഇടുക</strong>
+      <div style="color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem;">MP4, MOV, MKV, WebM ഫയലുകൾ പിന്തുണയ്ക്കുന്നു</div>
+      <input type="file" id="fileInput" accept="video/*" hidden />
+    </div>
+
+    <div class="controls">
+      <div class="field">
+        <label for="maxMb">ഓരോ ഭാഗത്തിന്റെയും പരമാവധി വലുപ്പം (MB)</label>
+        <input type="number" id="maxMb" value="480" min="5" max="495" />
+      </div>
+      <button id="splitBtn" disabled>വീഡിയോ മുറിക്കുക (Split)</button>
+    </div>
+
+    <div class="status" id="statusBox">തുടങ്ങുന്നതിനായി ഒരു വീഡിയോ ഫയൽ തിരഞ്ഞെടുക്കുക.</div>
+    <button class="btn-all" id="downloadAllBtn">എല്ലാ ഭാഗങ്ങളും ഒന്നിച്ചു ഡൗൺലോഡ് ചെയ്യുക (Download All)</button>
+    <div class="outputs" id="outputs"></div>
+  </div>
+
+  <script type="module">
+    import { FFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+    import { toBlobURL } from 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js';
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileLabel = document.getElementById('fileLabel');
+    const maxMbInput = document.getElementById('maxMb');
+    const splitBtn = document.getElementById('splitBtn');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const statusBox = document.getElementById('statusBox');
+    const outputsDiv = document.getElementById('outputs');
+
+    let selectedFile = null;
+    let ffmpeg = null;
+    let downloadLinks = [];
+
+    const log = (msg) => { statusBox.textContent = msg; };
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
+
+    function handleFile(file) {
+      selectedFile = file;
+      const mb = (file.size / (1024 * 1024)).toFixed(2);
+      fileLabel.textContent = `${file.name} (${mb} MB)`;
+      splitBtn.disabled = false;
+      downloadAllBtn.style.display = 'none';
+      outputsDiv.innerHTML = '';
+      downloadLinks = [];
+      log(`തിരഞ്ഞെടുത്ത ഫയൽ: ${file.name} (${mb} MB).\n"വീഡിയോ മുറിക്കുക (Split)" ബട്ടൺ അമർത്തുക.`);
+    }
+
+    function getVideoDuration(file) {
+      return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+          URL.revokeObjectURL(video.src);
+          resolve(video.duration);
+        };
+        video.onerror = () => reject(new Error('വീഡിയോയുടെ ദൈർഘ്യം കണ്ടെത്താനായില്ല.'));
+        video.src = URL.createObjectURL(file);
+      });
+    }
+
+    async function loadFFmpeg() {
+      if (ffmpeg) return ffmpeg;
+      log('FFmpeg എഞ്ചിൻ ലോഡ് ചെയ്യുന്നു (~30 MB, ആദ്യ തവണ മാത്രം)...');
+      ffmpeg = new FFmpeg();
+      const ffmpegBase = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm';
+      const coreBase = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+      await ffmpeg.load({
+        classWorkerURL: await toBlobURL(`${ffmpegBase}/worker.js`, 'text/javascript'),
+        coreURL: await toBlobURL(`${coreBase}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${coreBase}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+      return ffmpeg;
+    }
+
+    splitBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      splitBtn.disabled = true;
+      downloadAllBtn.style.display = 'none';
+      outputsDiv.innerHTML = '';
+      downloadLinks = [];
+
+      try {
+        const maxMb = parseFloat(maxMbInput.value) || 480;
+        const targetBytes = maxMb * 1024 * 1024;
+
+        if (selectedFile.size <= targetBytes) {
+          log(`ഈ ഫയൽ ഇതിനകം തന്നെ ${maxMb} MB-യിൽ താഴെയാണ്. മുറിക്കേണ്ട ആവശ്യമില്ല!`);
+          splitBtn.disabled = false;
+          return;
+        }
+
+        const duration = await getVideoDuration(selectedFile);
+        const bytesPerSec = selectedFile.size / duration;
+        const segmentSeconds = Math.max(1, Math.floor((targetBytes * 0.92) / bytesPerSec));
+
+        const ff = await loadFFmpeg();
+        const mountDir = '/input_mount';
+        await ff.createDir(mountDir);
+        await ff.mount('WORKERFS', { files: [selectedFile] }, mountDir);
+
+        const inputPath = `${mountDir}/${selectedFile.name}`;
+        const ext = selectedFile.name.includes('.') ? selectedFile.name.split('.').pop() : 'mp4';
+        const stem = selectedFile.name.replace(/\.[^/.]+$/, '');
+
+        log(`${selectedFile.name} ക്വാളിറ്റി കുറയാതെ ~${segmentSeconds} സെക്കൻഡ് ഭാഗങ്ങളായി മുറിക്കുന്നു...`);
+        await ff.exec([
+          '-i', inputPath,
+          '-c', 'copy',
+          '-map', '0',
+          '-f', 'segment',
+          '-segment_time', String(segmentSeconds),
+          '-reset_timestamps', '1',
+          '-avoid_negative_ts', 'make_zero',
+          `part_%03d.${ext}`
+        ]);
+
+        await ff.unmount(mountDir);
+        await ff.deleteDir(mountDir);
+
+        const files = await ff.listDir('/');
+        const partFiles = files
+          .filter((f) => !f.isDir && f.name.startsWith('part_'))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        if (!partFiles.length) throw new Error('ഭാഗങ്ങൾ നിർമ്മിക്കാനായില്ല.');
+
+        log(`പൂർത്തിയായി! ${maxMb} MB-യിൽ താഴെയുള്ള ${partFiles.length} ഭാഗങ്ങൾ തയ്യാറായി. താഴെ നിന്നും ഡൗൺലോഡ് ചെയ്യുക:`);
+
+        for (const f of partFiles) {
+          const data = await ff.readFile(f.name);
+          await ff.deleteFile(f.name);
+          const blob = new Blob([data.buffer], { type: selectedFile.type || 'video/mp4' });
+          const url = URL.createObjectURL(blob);
+          const partMb = (blob.size / (1024 * 1024)).toFixed(2);
+          const fileName = `${stem}_${f.name}`;
+
+          const row = document.createElement('div');
+          row.className = 'part-item';
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          link.textContent = 'ഡൗൺലോഡ് (Download)';
+          downloadLinks.push(link);
+
+          row.innerHTML = `<span><strong>${fileName}</strong> (${partMb} MB)</span>`;
+          row.appendChild(link);
+          outputsDiv.appendChild(row);
+        }
+
+        if (downloadLinks.length > 1) {
+          downloadAllBtn.style.display = 'block';
+        }
+      } catch (err) {
+        log(`പിശക്: ${err.message}`);
+      } finally {
+        splitBtn.disabled = false;
+      }
+    });
+
+    downloadAllBtn.addEventListener('click', () => {
+      downloadLinks.forEach((link, idx) => {
+        setTimeout(() => link.click(), idx * 600);
+      });
+    });
+  </script>
+</body>
+</html>
